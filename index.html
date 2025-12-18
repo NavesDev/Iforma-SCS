@@ -42,7 +42,6 @@
 </head>
 <body class="bg-[#f8fafc] text-slate-900">
 
-    <!-- Header / Nav -->
     <header class="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
@@ -72,7 +71,6 @@
         </div>
     </header>
 
-    <!-- Mobile Menu -->
     <div id="mobile-menu" class="hidden fixed inset-0 bg-white z-[60] p-6 flex flex-col gap-6 pt-24">
         <button onclick="app.toggleMenu()" class="absolute top-6 right-6 p-2"><i data-lucide="x"></i></button>
         <button onclick="app.navigate('home')" class="text-3xl font-black text-left">Dashboard</button>
@@ -81,16 +79,14 @@
         <button onclick="app.navigate('colaborar')" class="text-3xl font-black text-left text-blue-600">Relatar Problema</button>
     </div>
 
-    <!-- Main Content -->
     <main id="view-container" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <!-- Renderização Dinâmica Aqui -->
-    </main>
+        </main>
 
-    <!-- App Logic -->
     <script>
         // State & Data
         const state = {
             currentView: 'home',
+            selectedObra: null, // Rastreia qual obra está sendo detalhada
             newsFilter: 'todos',
             data: {
                 noticias: [
@@ -100,9 +96,9 @@
                     { id: 4, tag: 'SEGURANÇA', title: 'Novas câmeras conectadas ao centro de comando', cat: 'Gov', time: '1 dia atrás', img: 'https://images.unsplash.com/photo-1557597774-9d2739f85a76?w=800' }
                 ],
                 obras: [
-                    { local: 'Quadra 4 - Sul', progresso: 85, status: 'Finalizando', info: 'Troca de fiação e LED' },
-                    { local: 'Quadra 2 - Bloco B', progresso: 30, status: 'Escavação', info: 'Drenagem pluvial' },
-                    { local: 'Galeria dos Estados', progresso: 100, status: 'Concluído', info: 'Pintura e revitalização' }
+                    { id: 0, local: 'Quadra 4 - Sul', progresso: 85, status: 'Finalizando', info: 'Troca de fiação e iluminação LED em todo o perímetro.' },
+                    { id: 1, local: 'Quadra 2 - Bloco B', progresso: 30, status: 'Escavação', info: 'Implantação de novo sistema de drenagem pluvial.' },
+                    { id: 2, local: 'Galeria dos Estados', progresso: 100, status: 'Concluído', info: 'Pintura, revitalização do piso e novos mobiliários urbanos.' }
                 ]
             }
         };
@@ -111,9 +107,9 @@
             navigate: (view) => {
                 state.currentView = view;
                 app.render();
-                // Update nav classes
                 document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
                 document.getElementById(`nav-${view}`)?.classList.add('active-nav');
+                if(!document.getElementById('mobile-menu').classList.contains('hidden')) app.toggleMenu();
                 window.scrollTo(0,0);
             },
 
@@ -133,6 +129,7 @@
                     case 'noticias': app.views.noticias(container); break;
                     case 'obras': app.views.obras(container); break;
                     case 'colaborar': app.views.colaborar(container); break;
+                    case 'detalhes-obra': app.views.detalhesObra(container); break;
                 }
                 lucide.createIcons();
             },
@@ -185,7 +182,7 @@
                                     <i data-lucide="construction" class="text-blue-600"></i> Obras Ativas
                                 </h3>
                                 ${state.data.obras?.slice(0, 3).map(obra => `
-                                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:border-blue-200 transition-all" onclick="state.selectedObra = state.data.obras[${obra.id}]; app.navigate('detalhes-obra')">
                                         <div class="flex justify-between items-start mb-3">
                                             <h5 class="font-bold text-sm">${obra.local}</h5>
                                             <span class="text-[10px] font-bold text-blue-600">${obra.progresso}%</span>
@@ -255,11 +252,103 @@
                                             </div>
                                             <div class="flex justify-between mt-3">
                                                 <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Status: ${o.status}</span>
-                                                <span class="text-[10px] font-black uppercase text-blue-500 tracking-widest cursor-pointer hover:underline">Ver detalhes técnicos</span>
+                                                <span onclick="state.selectedObra = state.data.obras[${o.id}]; app.navigate('detalhes-obra')" 
+                                                      class="text-[10px] font-black uppercase text-blue-500 tracking-widest cursor-pointer hover:underline hover:text-blue-700 transition-colors">
+                                                    Ver detalhes técnicos
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
                                 `).join('')}
+                            </div>
+                        </div>
+                    `;
+                },
+
+                detalhesObra: (ctx) => {
+                    const obra = state.selectedObra;
+                    if (!obra) { app.navigate('obras'); return; }
+
+                    ctx.innerHTML = `
+                        <div class="max-w-5xl mx-auto space-y-8">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <button onclick="app.navigate('obras')" class="flex items-center gap-2 text-slate-500 font-bold hover:text-blue-600 transition-colors">
+                                    <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar para Obras
+                                </button>
+                                <div class="flex gap-2">
+                                    <span class="bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">${obra.status}</span>
+                                    <span class="bg-slate-100 text-slate-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">ID: #SCS-2024-${obra.id}</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <div class="lg:col-span-2 space-y-6">
+                                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                        <h1 class="text-3xl font-black mb-2">${obra.local}</h1>
+                                        <p class="text-slate-500 mb-8 leading-relaxed">${obra.info}</p>
+                                        
+                                        <h4 class="font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <i data-lucide="list-checks" class="text-blue-600"></i> Cronograma de Execução
+                                        </h4>
+                                        <div class="space-y-4">
+                                            ${['Planejamento concluído', 'Mobilização técnica', 'Fase de infraestrutura', 'Acabamento final'].map((etapa, i) => {
+                                                const concluido = (obra.progresso > (i * 25));
+                                                return `
+                                                <div class="flex items-center gap-4 p-4 rounded-2xl ${concluido ? 'bg-blue-50' : 'bg-slate-50 opacity-60'}">
+                                                    <div class="w-6 h-6 rounded-full ${concluido ? 'bg-blue-600' : 'bg-slate-300'} flex items-center justify-center">
+                                                        <i data-lucide="${concluido ? 'check' : 'circle'}" class="text-white w-3 h-3"></i>
+                                                    </div>
+                                                    <span class="font-bold text-sm ${concluido ? 'text-blue-900' : 'text-slate-500'}">${etapa}</span>
+                                                </div>`;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+
+                                    <div class="bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+                                        <h4 class="font-black text-sm uppercase tracking-widest mb-6 opacity-60">Ficha Técnica</h4>
+                                        <div class="grid grid-cols-2 gap-8">
+                                            <div>
+                                                <p class="text-[10px] uppercase font-black opacity-50 mb-1">Engenheiro Resp.</p>
+                                                <p class="text-lg font-bold">Ricardo M. Silva</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-black opacity-50 mb-1">Previsão Final</p>
+                                                <p class="text-lg font-bold">Dezembro 2024</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-black opacity-50 mb-1">Investimento</p>
+                                                <p class="text-lg font-bold">Recursos Diretos</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-black opacity-50 mb-1">Área Afetada</p>
+                                                <p class="text-lg font-bold">Aproximada</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-6">
+                                    <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm text-center">
+                                        <div class="inline-block p-4 rounded-full bg-blue-50 mb-4">
+                                            <i data-lucide="gauge" class="text-blue-600 w-10 h-10"></i>
+                                        </div>
+                                        <h5 class="font-black text-2xl text-blue-600">${obra.progresso}%</h5>
+                                        <p class="font-bold text-slate-400 text-xs uppercase tracking-widest">Execução Atual</p>
+                                    </div>
+
+                                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                                        <h5 class="font-black text-sm mb-4">Mão de Obra</h5>
+                                        <div class="flex -space-x-3 mb-6">
+                                            <img class="w-10 h-10 rounded-full border-4 border-white bg-slate-200" src="https://i.pravatar.cc/150?u=a">
+                                            <img class="w-10 h-10 rounded-full border-4 border-white bg-slate-200" src="https://i.pravatar.cc/150?u=b">
+                                            <img class="w-10 h-10 rounded-full border-4 border-white bg-slate-200" src="https://i.pravatar.cc/150?u=c">
+                                            <div class="w-10 h-10 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white">+12</div>
+                                        </div>
+                                        <button class="w-full py-4 bg-slate-900 text-white rounded-xl text-xs font-black hover:bg-blue-600 transition-colors uppercase tracking-widest">
+                                            Ver Galeria de Fotos
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
